@@ -1,0 +1,21 @@
+# Capstone tuning parameters.
+#
+# Try changing these while the game runs:
+#     ros2 param set /turtle_controller linear_gain 4.0
+#     ros2 param set /turtle_spawner spawn_frequency 1.0   (needs a restart)
+#
+# Raising the gains too far makes the controller overshoot and circle its
+# target forever - a good, visible lesson in what a P controller cannot do.
+
+turtle_spawner:
+  ros__parameters:
+    spawn_frequency: 0.5       # new turtles per second
+    turtle_name_prefix: "turtle"
+
+turtle_controller:
+  ros__parameters:
+    catch_closest_first: true
+    linear_gain: 2.0
+    angular_gain: 6.0
+    catch_distance: 0.5        # metres, in turtlesim units
+    control_period: 0.01       # 100 Hz control loop

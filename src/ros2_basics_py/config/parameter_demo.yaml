@@ -1,0 +1,20 @@
+# Lesson 07/08 - parameters loaded from YAML.
+#
+# Loaded by params_demo.launch.py, or directly on the command line:
+#     ros2 run ros2_basics_py parameter_demo --ros-args \
+#         --params-file src/ros2_basics_py/config/parameter_demo.yaml
+#
+# The top-level key MUST match the node name exactly. If the node runs in a
+# namespace the key has to include it, e.g. /my_robot/parameter_demo.
+# Use "/**" to match every node.
+
+parameter_demo:
+  ros__parameters:
+    robot_name: "humble_bot"
+    publish_frequency: 2.0
+    enabled: true
+
+# Applies to every node that loads this file.
+/**:
+  ros__parameters:
+    use_sim_time: false

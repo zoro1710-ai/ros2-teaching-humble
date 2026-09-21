@@ -1,0 +1,22 @@
+<!--
+  Lesson 08 - the same launch file written in XML.
+
+  Run it with:
+      ros2 launch ros2_basics_py talker_listener.launch.xml
+
+  ROS 2 accepts three launch formats: Python (.launch.py), XML (.launch.xml)
+  and YAML (.launch.yaml). XML is shorter and easier to read when you are only
+  starting nodes and setting parameters. Reach for Python when you need
+  conditionals, loops, or to compute a value before launching.
+-->
+<launch>
+  <arg name="chatter_topic" default="chatter"/>
+
+  <node pkg="ros2_basics_py" exec="talker" name="talker" output="screen">
+    <remap from="chatter" to="$(var chatter_topic)"/>
+  </node>
+
+  <node pkg="ros2_basics_py" exec="listener" name="listener" output="screen">
+    <remap from="chatter" to="$(var chatter_topic)"/>
+  </node>
+</launch>

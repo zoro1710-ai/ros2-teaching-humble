@@ -1,0 +1,27 @@
+{
+  "name": "ROS 2 Humble basics",
+  "build": {
+    "dockerfile": "../docker/Dockerfile",
+    "context": ".."
+  },
+  "workspaceFolder": "/home/ros/ros2_ws",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/ros/ros2_ws,type=bind",
+  "remoteUser": "ros",
+  "runArgs": ["--net=host", "--ipc=host"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-iot.vscode-ros",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "files.associations": {
+          "*.launch.xml": "xml"
+        }
+      }
+    }
+  }
+}
