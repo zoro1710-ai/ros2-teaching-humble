@@ -1,4 +1,4 @@
-﻿# ROS2 Learning Repository - Ubuntu 22.04 + ROS2 Humble
+﻿# ROS2 Teaching Repository - Ubuntu 22.04 + ROS2 Humble
 
 This repository contains structured materials for teaching ROS2 Humble Hawksbill on Ubuntu 22.04 LTS.
 
