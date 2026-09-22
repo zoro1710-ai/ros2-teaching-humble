@@ -1,15 +1,13 @@
 # The course
 
-Sixteen lessons, in order. Each one is short, ends with something you run, and
-builds on the one before it. Everything is written for **Ubuntu 22.04 + ROS 2
-Humble Hawksbill**.
+Twenty-three lessons, in order. Each one is short, ends with something you
+run, and builds on the one before it. Everything is written for
+**Ubuntu 22.04 + ROS 2 Humble Hawksbill**.
 
 If you only have an hour, do lessons 00 → 04. That is enough to write a node
-that talks to another node, which is 80% of day-to-day ROS 2.
+that talks to another node, which is most of day-to-day ROS 2.
 
-> **Status:** lessons 00–05 are written. Lessons 06–16 and the reference pages
-> are in progress — their code already exists and runs in `src/`, so you can
-> follow along from the source files and their docstrings in the meantime.
+Parts 1–5 are ROS 2 itself. Part 6 builds a four-legged robot with it.
 
 ## Part 1 — Get running
 
@@ -52,6 +50,23 @@ that talks to another node, which is 80% of day-to-day ROS 2.
 | # | Lesson | You will be able to |
 |---|--------|---------------------|
 | 16 | [Capstone: catch them all](16-capstone-catch-them-all.md) | Build a complete multi-node application with a control loop |
+
+## Part 6 — A four legged robot
+
+Everything above is communication. This part is an actual robot: a spider bot
+with four 3-DOF legs that walks where you tell it.
+
+| # | Lesson | You will be able to |
+|---|--------|---------------------|
+| 17 | [URDF and robot description](17-urdf-and-robot-description.md) | Describe a 12-joint robot with xacro and see it in RViz |
+| 18 | [Gazebo simulation](18-gazebo-simulation.md) | Put it in a world with gravity, contacts and friction |
+| 19 | [ros2_control](19-ros2-control.md) | Command real or simulated actuators instead of faking joint states |
+| 20 | [Leg inverse kinematics](20-leg-kinematics.md) | Turn a foot position into three joint angles, and test it properly |
+| 21 | [Gait generation](21-gait-generation.md) | Coordinate four legs into a trot that walks, strafes and turns |
+| 22 | [Navigation for legged robots](22-navigation-for-legged-robots.md) | Bridge Nav2's /cmd_vel to a gait, and know what is still missing |
+
+Part 6 runs in RViz alone up to lesson 21 — Gazebo is only needed for lessons
+18 and 19, and it is a large install.
 
 ## Reference
 

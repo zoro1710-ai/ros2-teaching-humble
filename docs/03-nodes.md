@@ -146,6 +146,92 @@ Two nodes with the same name at the same time is legal but confusing —
 
 ---
 
+## The complete code
+
+Here is [`timer_node.py`](../src/ros2_basics_py/ros2_basics_py/timer_node.py)
+in full, with nothing left out. Everything else in this course is a variation
+on this shape.
+
+```python
+#!/usr/bin/env python3
+"""Lesson 03 - timers, the ROS 2 way to do periodic work."""
+
+import rclpy
+from rclpy.node import Node
+
+
+class TimerNode(Node):
+    """Fires a callback twice per second and demonstrates the log levels."""
+
+    def __init__(self):
+        super().__init__('timer_node')
+        self._tick = 0
+
+        # create_timer(period_in_seconds, callback)
+        self._timer = self.create_timer(0.5, self.on_timer)
+
+        self.get_logger().info('timer_node started, ticking every 0.5 s')
+
+    def on_timer(self):
+        self._tick += 1
+
+        # The five severity levels. Only INFO and above are printed by default;
+        # show DEBUG with:  --ros-args --log-level timer_node:=debug
+        self.get_logger().debug('debug: internal counter is %d' % self._tick)
+        self.get_logger().info('tick %d' % self._tick)
+
+        if self._tick % 10 == 0:
+            self.get_logger().warn('ten ticks elapsed')
+
+        # get_clock().now() is ROS time; it respects /clock when use_sim_time
+        # is true, unlike time.time().
+        if self._tick == 1:
+            stamp = self.get_clock().now()
+            self.get_logger().info('first tick at t=%.3f s' % (stamp.nanoseconds / 1e9))
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = TimerNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+Line by line:
+
+| Line | What it does |
+|---|---|
+| `import rclpy` | the ROS 2 Python client library |
+| `from rclpy.node import Node` | the base class every node inherits |
+| `class TimerNode(Node)` | your node **is a** Node — that is how it gets `create_timer`, `get_logger`, and the rest |
+| `super().__init__('timer_node')` | registers the node with ROS under this default name. Nothing works before this line |
+| `self._tick = 0` | ordinary Python state. Nothing special about it |
+| `self._timer = self.create_timer(...)` | asks ROS to call `on_timer` every 0.5 s. **Stored on `self`** so it is not garbage collected |
+| `def on_timer(self)` | the callback. Takes no arguments, returns nothing |
+| `self.get_logger().info(...)` | logs with the node name, timestamp and severity attached |
+| `rclpy.init(args=args)` | connect to the middleware. Exactly once per process |
+| `node = TimerNode()` | construct it — which runs `__init__` and creates the timer |
+| `rclpy.spin(node)` | hand the thread to ROS so callbacks can fire. Blocks until shutdown |
+| `except KeyboardInterrupt` | Ctrl+C exits quietly instead of printing a traceback |
+| `node.destroy_node()` | release the node's resources |
+| `if rclpy.ok(): rclpy.shutdown()` | disconnect. The `ok()` guard avoids a double-shutdown error |
+| `if __name__ == '__main__'` | lets you run the file directly with `python3`, as well as via `ros2 run` |
+
+The `main()` block is identical in almost every file in this repo. Read it
+once here, and from lesson 04 onwards you can skip straight to the class.
+
+---
+
 ## Try it
 
 ```bash

@@ -1,0 +1,298 @@
+<?xml version="1.0"?>
+<!--
+  Lesson 17 - the robot description for a four legged spider bot.
+
+  Check it without launching anything:
+      xacro src/spider_bot/urdf/spider_bot.urdf.xacro > /tmp/spider.urdf
+      check_urdf /tmp/spider.urdf
+      urdf_to_graphiz /tmp/spider.urdf      # writes a PDF of the tree
+
+  See it:
+      ros2 launch spider_bot display.launch.py
+
+  Structure: one body, four legs, three joints per leg = 12 joints.
+
+      base_link
+        +. front_left_coxa  .> front_left_femur  .> front_left_tibia  .> foot
+        +. front_right_coxa .> front_right_femur .> front_right_tibia .> foot
+        +. rear_left_coxa   .> ...
+        +. rear_right_coxa  .> ...
+
+  IMPORTANT: the link lengths below must match GEOMETRY in
+  spider_bot/leg_kinematics.py. If the model and the maths disagree, the
+  robot in RViz will not match the robot in the code, and you will chase that
+  for hours. One source of truth, or at least one comment in both places.
+-->
+<robot name="spider_bot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============================================================= -->
+  <!-- Dimensions. Change them here, and in leg_kinematics.py.        -->
+  <!-- ============================================================= -->
+  <xacro:property name="body_length" value="0.30"/>
+  <xacro:property name="body_width" value="0.20"/>
+  <xacro:property name="body_height" value="0.06"/>
+  <xacro:property name="body_mass" value="1.5"/>
+
+  <xacro:property name="coxa_length" value="0.05"/>
+  <xacro:property name="femur_length" value="0.10"/>
+  <xacro:property name="tibia_length" value="0.14"/>
+  <xacro:property name="leg_radius" value="0.015"/>
+  <xacro:property name="leg_mass" value="0.10"/>
+
+  <!-- Where the legs attach, measured from the centre of the body. -->
+  <xacro:property name="mount_x" value="0.12"/>
+  <xacro:property name="mount_y" value="0.08"/>
+
+  <xacro:property name="pi" value="3.14159265359"/>
+
+  <!-- ============================================================= -->
+  <!-- Materials (colours in RViz).                                   -->
+  <!-- ============================================================= -->
+  <material name="body_grey">
+    <color rgba="0.25 0.27 0.30 1.0"/>
+  </material>
+  <material name="leg_orange">
+    <color rgba="0.90 0.49 0.13 1.0"/>
+  </material>
+  <material name="foot_black">
+    <color rgba="0.10 0.10 0.10 1.0"/>
+  </material>
+
+  <!-- ============================================================= -->
+  <!-- A reusable inertia block for a box.                            -->
+  <!-- Every link that Gazebo simulates needs mass and inertia, or    -->
+  <!-- the physics engine will either ignore it or explode.           -->
+  <!-- ============================================================= -->
+  <xacro:macro name="box_inertia" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia
+        ixx="${mass * (y*y + z*z) / 12.0}" ixy="0.0" ixz="0.0"
+        iyy="${mass * (x*x + z*z) / 12.0}" iyz="0.0"
+        izz="${mass * (x*x + y*y) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- ============================================================= -->
+  <!-- One leg: coxa -> femur -> tibia -> foot.                       -->
+  <!--                                                                -->
+  <!-- The axis of the femur and tibia joints is "0 -1 0" on purpose. -->
+  <!-- With that axis a POSITIVE joint angle LIFTS the foot, which is  -->
+  <!-- the convention leg_kinematics.py is written in. Flip it and     -->
+  <!-- every leg bends the wrong way.                                  -->
+  <!-- ============================================================= -->
+  <xacro:macro name="leg" params="name x y yaw">
+
+    <!-- coxa: rotates the whole leg about the vertical axis -->
+    <joint name="${name}_coxa_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="${name}_coxa"/>
+      <origin xyz="${x} ${y} 0" rpy="0 0 ${yaw}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-pi/4}" upper="${pi/4}" effort="10.0" velocity="6.0"/>
+      <dynamics damping="0.05" friction="0.01"/>
+    </joint>
+
+    <link name="${name}_coxa">
+      <visual>
+        <origin xyz="${coxa_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${coxa_length}"/>
+        </geometry>
+        <material name="leg_orange"/>
+      </visual>
+      <collision>
+        <origin xyz="${coxa_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${coxa_length}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertia mass="${leg_mass}" x="${coxa_length}"
+                         y="${2*leg_radius}" z="${2*leg_radius}"/>
+    </link>
+
+    <!-- femur: the upper leg segment -->
+    <joint name="${name}_femur_joint" type="revolute">
+      <parent link="${name}_coxa"/>
+      <child link="${name}_femur"/>
+      <origin xyz="${coxa_length} 0 0" rpy="0 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="${-pi/2}" upper="${pi/2}" effort="20.0" velocity="6.0"/>
+      <dynamics damping="0.05" friction="0.01"/>
+    </joint>
+
+    <link name="${name}_femur">
+      <visual>
+        <origin xyz="${femur_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${femur_length}"/>
+        </geometry>
+        <material name="leg_orange"/>
+      </visual>
+      <collision>
+        <origin xyz="${femur_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${femur_length}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertia mass="${leg_mass}" x="${femur_length}"
+                         y="${2*leg_radius}" z="${2*leg_radius}"/>
+    </link>
+
+    <!-- tibia: the lower leg segment that reaches the ground -->
+    <joint name="${name}_tibia_joint" type="revolute">
+      <parent link="${name}_femur"/>
+      <child link="${name}_tibia"/>
+      <origin xyz="${femur_length} 0 0" rpy="0 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="${-2.7}" upper="${0.2}" effort="20.0" velocity="6.0"/>
+      <dynamics damping="0.05" friction="0.01"/>
+    </joint>
+
+    <link name="${name}_tibia">
+      <visual>
+        <origin xyz="${tibia_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius*0.7}" length="${tibia_length}"/>
+        </geometry>
+        <material name="leg_orange"/>
+      </visual>
+      <collision>
+        <origin xyz="${tibia_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius*0.7}" length="${tibia_length}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertia mass="${leg_mass*0.6}" x="${tibia_length}"
+                         y="${2*leg_radius}" z="${2*leg_radius}"/>
+    </link>
+
+    <!-- foot: a fixed frame at the tip, useful for TF lookups -->
+    <joint name="${name}_foot_joint" type="fixed">
+      <parent link="${name}_tibia"/>
+      <child link="${name}_foot"/>
+      <origin xyz="${tibia_length} 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${name}_foot">
+      <visual>
+        <geometry>
+          <sphere radius="${leg_radius*0.8}"/>
+        </geometry>
+        <material name="foot_black"/>
+      </visual>
+      <collision>
+        <geometry>
+          <sphere radius="${leg_radius*0.8}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertia mass="0.01" x="0.02" y="0.02" z="0.02"/>
+    </link>
+
+    <!-- Gazebo needs friction on the feet or the robot skates. -->
+    <gazebo reference="${name}_foot">
+      <mu1>1.2</mu1>
+      <mu2>1.2</mu2>
+      <material>Gazebo/Black</material>
+    </gazebo>
+
+    <gazebo reference="${name}_coxa">
+      <material>Gazebo/Orange</material>
+    </gazebo>
+    <gazebo reference="${name}_femur">
+      <material>Gazebo/Orange</material>
+    </gazebo>
+    <gazebo reference="${name}_tibia">
+      <material>Gazebo/Orange</material>
+    </gazebo>
+
+  </xacro:macro>
+
+  <!-- ============================================================= -->
+  <!-- The body.                                                      -->
+  <!--                                                                -->
+  <!-- base_link is the frame every other frame hangs off, and the    -->
+  <!-- name the rest of the ROS ecosystem expects (lesson 12).        -->
+  <!-- ============================================================= -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+      <material name="body_grey"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertia mass="${body_mass}" x="${body_length}"
+                       y="${body_width}" z="${body_height}"/>
+  </link>
+
+  <gazebo reference="base_link">
+    <material>Gazebo/DarkGrey</material>
+  </gazebo>
+
+  <!-- ============================================================= -->
+  <!-- The four legs. Splayed 45 degrees out from each corner, so     -->
+  <!-- every leg's +x points diagonally away from the body.           -->
+  <!-- These yaw values MUST match LEG_MOUNTS in leg_kinematics.py.   -->
+  <!-- ============================================================= -->
+  <xacro:leg name="front_left"  x="${mount_x}"  y="${mount_y}"  yaw="${pi/4}"/>
+  <xacro:leg name="front_right" x="${mount_x}"  y="${-mount_y}" yaw="${-pi/4}"/>
+  <xacro:leg name="rear_left"   x="${-mount_x}" y="${mount_y}"  yaw="${3*pi/4}"/>
+  <xacro:leg name="rear_right"  x="${-mount_x}" y="${-mount_y}" yaw="${-3*pi/4}"/>
+
+  <!-- ============================================================= -->
+  <!-- ros2_control (lesson 19).                                      -->
+  <!--                                                                -->
+  <!-- This block tells ros2_control which joints it may command and  -->
+  <!-- what it can read back. gazebo_ros2_control provides the        -->
+  <!-- simulated hardware; on a real robot you would swap in your own -->
+  <!-- hardware plugin and nothing above this line would change.      -->
+  <!-- ============================================================= -->
+  <xacro:macro name="leg_control" params="name">
+    <joint name="${name}_coxa_joint">
+      <command_interface name="position">
+        <param name="min">${-pi/4}</param>
+        <param name="max">${pi/4}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${name}_femur_joint">
+      <command_interface name="position">
+        <param name="min">${-pi/2}</param>
+        <param name="max">${pi/2}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${name}_tibia_joint">
+      <command_interface name="position">
+        <param name="min">-2.7</param>
+        <param name="max">0.2</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </xacro:macro>
+
+  <ros2_control name="SpiderBotHardware" type="system">
+    <hardware>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+    </hardware>
+    <xacro:leg_control name="front_left"/>
+    <xacro:leg_control name="front_right"/>
+    <xacro:leg_control name="rear_left"/>
+    <xacro:leg_control name="rear_right"/>
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <parameters>$(find spider_bot)/config/spider_bot_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>spider_bot</name>
+  <version>1.0.0</version>
+  <description>
+    Part 6 of the course: a four legged robot. URDF description, leg inverse
+    kinematics, a trot gait, and the cmd_vel bridge that navigation needs.
+  </description>
+  <maintainer email="daaditya550@gmail.com">Aaditya</maintainer>
+  <license>MIT</license>
+
+  <!-- Nodes -->
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <!-- Robot description and visualisation (lesson 17) -->
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <!-- Driving it by hand (lesson 22) -->
+  <exec_depend>teleop_twist_keyboard</exec_depend>
+
+  <!--
+    Simulation and control (lessons 18-19).
+    These are deliberately NOT <depend> - they pull in Gazebo, which is a
+    large install. Lessons 17, 20 and 21 all run without them.
+    Install when you get to lesson 18:
+        sudo apt install ros-humble-gazebo-ros-pkgs \
+                         ros-humble-gazebo-ros2-control \
+                         ros-humble-ros2-control ros-humble-ros2-controllers
+  -->
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

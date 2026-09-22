@@ -118,6 +118,136 @@ if not self._client.service_is_ready():
 
 ---
 
+## The complete code
+
+### A server
+
+[`add_two_ints_server.py`](../src/ros2_basics_py/ros2_basics_py/add_two_ints_server.py),
+in full:
+
+```python
+#!/usr/bin/env python3
+"""Lesson 05 - a service server using a ready-made interface."""
+
+from example_interfaces.srv import AddTwoInts
+import rclpy
+from rclpy.node import Node
+
+
+class AddTwoIntsServer(Node):
+    """Answers /add_two_ints with the sum of the two requested integers."""
+
+    def __init__(self):
+        super().__init__('add_two_ints_server')
+
+        # create_service(srv_type, service_name, callback)
+        self._service = self.create_service(
+            AddTwoInts, 'add_two_ints', self.on_request)
+
+        self.get_logger().info('add_two_ints server ready')
+
+    def on_request(self, request, response):
+        response.sum = request.a + request.b
+        self.get_logger().info(
+            '%d + %d = %d' % (request.a, request.b, response.sum))
+        return response
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = AddTwoIntsServer()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+Three things to notice:
+
+- `from example_interfaces.srv import AddTwoInts` — services import from
+  `<package>.srv`, messages from `<package>.msg`.
+- The callback signature is `(self, request, response)` — **two** arguments
+  after `self`. ROS builds the empty `response` for you.
+- `request.a` and `request.b` come from the top half of the `.srv` file;
+  `response.sum` from the bottom half. Run
+  `ros2 interface show example_interfaces/srv/AddTwoInts` to see them.
+
+### A server that validates
+
+Real servers reject bad input.
+[`led_panel.py`](../src/ros2_basics_py/ros2_basics_py/led_panel.py) does it
+like this:
+
+```python
+    def on_set_led(self, request, response):
+        # Validate the request. A service that returns success=False with a
+        # clear reason is far easier to debug than one that throws.
+        if not 0 <= request.led_number < len(self._leds):
+            response.success = False
+            self.get_logger().warn(
+                'rejected: led_number %d is out of range' % request.led_number)
+            return response
+
+        self._leds[request.led_number] = request.state
+        response.success = True
+        self.get_logger().info(
+            'LED %d -> %s' % (request.led_number, 'ON' if request.state else 'off'))
+        self.publish_states()
+        return response
+```
+
+Both paths fill the response and return it. Neither raises. "No, and here is
+why" is always more useful to the caller than an exception.
+
+### The client that keeps running
+
+[`battery_node.py`](../src/ros2_basics_py/ros2_basics_py/battery_node.py) is
+the pattern to copy — a node with a timer that also calls a service:
+
+```python
+    def set_led(self, led_number, state):
+        if not self._client.service_is_ready():
+            # Non-blocking check. Blocking here would stall the executor and
+            # freeze every other callback in this node.
+            self.get_logger().warn('/set_led not available yet, skipping')
+            return
+
+        request = SetLed.Request()
+        request.led_number = led_number
+        request.state = state
+
+        future = self._client.call_async(request)
+        future.add_done_callback(self.on_set_led_response)
+
+    def on_set_led_response(self, future):
+        try:
+            response = future.result()
+        except Exception as exc:  # noqa: BLE001 - we want to log any failure
+            self.get_logger().error('service call failed: %r' % exc)
+            return
+
+        if not response.success:
+            self.get_logger().warn('led_panel rejected the request')
+```
+
+Follow the control flow: `set_led` sends the request and **returns
+immediately**. The node carries on running its timer. Some time later — maybe
+milliseconds, maybe never — the executor calls `on_set_led_response` with the
+answer.
+
+That is the shape of every service call inside a real node. `SetLed.Request()`
+creates an empty request; `future.result()` may raise, so it is wrapped.
+
+---
+
 ## Try it
 
 ### By hand

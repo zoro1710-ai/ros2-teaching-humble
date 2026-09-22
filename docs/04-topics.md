@@ -90,6 +90,140 @@ you are packing several values into one string, define a message
 
 ---
 
+## The complete code
+
+### The publisher
+
+[`talker.py`](../src/ros2_basics_py/ros2_basics_py/talker.py), in full:
+
+```python
+#!/usr/bin/env python3
+"""Lesson 04 - the classic publisher."""
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+
+class Talker(Node):
+    """Publishes an incrementing greeting on /chatter."""
+
+    def __init__(self):
+        super().__init__('talker')
+
+        # create_publisher(msg_type, topic_name, qos)
+        # The plain integer 10 is shorthand for "keep last 10, reliable".
+        self._publisher = self.create_publisher(String, 'chatter', 10)
+        self._count = 0
+        self._timer = self.create_timer(0.5, self.publish_message)
+
+        self.get_logger().info('talker publishing on /chatter')
+
+    def publish_message(self):
+        msg = String()
+        msg.data = 'Hello ROS 2: %d' % self._count
+        self._publisher.publish(msg)
+        self.get_logger().info('published "%s"' % msg.data)
+        self._count += 1
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = Talker()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+Compared with `timer_node.py` from [lesson 03](03-nodes.md), exactly three
+things are new:
+
+1. `from std_msgs.msg import String` — the message **type**. The import path
+   for any message is `<package>.msg`.
+2. `self._publisher = self.create_publisher(String, 'chatter', 10)` — creates
+   the publisher. Store it on `self`, like the timer.
+3. Inside the callback: build a message, fill its fields, publish it.
+
+The three-step message dance is worth saying out loud, because you cannot
+shortcut it:
+
+```python
+msg = String()          # create it empty
+msg.data = 'hello'      # fill each field by name
+self._publisher.publish(msg)
+```
+
+`String('hello')` does not work. Neither does publishing a raw Python string.
+
+### The subscriber
+
+[`listener.py`](../src/ros2_basics_py/ros2_basics_py/listener.py), in full:
+
+```python
+#!/usr/bin/env python3
+"""Lesson 04 - the classic subscriber."""
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+
+class Listener(Node):
+    """Prints every message received on /chatter."""
+
+    def __init__(self):
+        super().__init__('listener')
+
+        # create_subscription(msg_type, topic_name, callback, qos)
+        # The topic name, type and QoS must all match the publisher or the
+        # two will never connect.
+        self._subscription = self.create_subscription(
+            String, 'chatter', self.on_message, 10)
+
+        self.get_logger().info('listener waiting for messages on /chatter')
+
+    def on_message(self, msg):
+        self.get_logger().info('heard "%s"' % msg.data)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = Listener()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+Notice what is **not** here: there is no loop, no `get_message()`, no polling.
+The subscriber never asks for data. You register `on_message` and the executor
+calls it once per arriving message.
+
+That inversion — your code is called, it does not call — is the ROS 2
+programming model. Everything from here on is more of it.
+
+`on_message(self, msg)` takes exactly one argument (the message) and returns
+nothing. Whatever it returns is discarded.
+
+---
+
 ## Debugging from the CLI
 
 This is the most valuable habit in this lesson.

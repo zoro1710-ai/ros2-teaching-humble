@@ -19,6 +19,18 @@ REQUIRED_PACKAGES = [
     'ros2_basics_interfaces',
     'ros2_basics_py',
     'turtle_capstone',
+    'spider_bot',
+]
+
+# Part 6 needs these to show the robot. Missing ones are a warning, not a
+# failure - lessons 00 to 16 do not need them at all.
+PART_SIX_PACKAGES = [
+    ('xacro', 'xacro', 'builds the robot description (lesson 17)'),
+    ('robot_state_publisher', 'robot-state-publisher',
+     'turns joint angles into TF (lesson 17)'),
+    ('joint_state_publisher_gui', 'joint-state-publisher-gui',
+     'the joint sliders (lesson 17)'),
+    ('rviz2', 'rviz2', 'draws the robot (lessons 17 and 21)'),
 ]
 
 PASS = '[ ok ]'
@@ -147,6 +159,27 @@ def check_turtlesim():
     return True
 
 
+def check_part_six():
+    """Part 6 (the legged robot) needs xacro, RViz and friends."""
+    missing = []
+    for package, apt_name, why in PART_SIX_PACKAGES:
+        code, _ = run(['ros2', 'pkg', 'prefix', package])
+        if code != 0:
+            missing.append((package, apt_name, why))
+
+    if not missing:
+        print(PASS, 'Part 6 (spider bot) prerequisites are installed.')
+        return True
+
+    print(WARN, '%d Part 6 package(s) missing (lessons 00-16 do not need them):'
+          % len(missing))
+    for package, _, why in missing:
+        print('       %-26s %s' % (package, why))
+    print('       fix: sudo apt install %s' % ' '.join(
+        'ros-%s-%s' % (EXPECTED_DISTRO, apt_name) for _, apt_name, _ in missing))
+    return True
+
+
 def main():
     """Run every check and report an overall result."""
     print('ROS 2 basics - environment check')
@@ -159,6 +192,7 @@ def main():
         check_workspace_layout,
         check_workspace_built,
         check_turtlesim,
+        check_part_six,
     ]
 
     failed = 0
