@@ -40,7 +40,7 @@ rosdep update
 ```
 
 The official page is
-<https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html> — if
+<https://docs.ros.org/en/humble/Installation/Alternatives/Ubuntu-Development-Setup.html> — if
 a command above ever fails, that page is the source of truth.
 
 ### Not on Ubuntu 22.04?
