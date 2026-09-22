@@ -105,6 +105,11 @@ Or just use the helper: `./scripts/build.sh`.
 ```bash
 python3 scripts/verify_setup.py
 ```
+If python is not installed then:
+```bash
+sudo apt update
+sudo apt install -y python3 python3-pip
+```
 
 It checks each thing that commonly breaks and prints the exact fix.
 
