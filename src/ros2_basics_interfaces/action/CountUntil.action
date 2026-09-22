@@ -1,0 +1,9 @@
+# Goal: count from 1 up to target_number, waiting `period` seconds between steps.
+int64 target_number
+float64 period
+---
+# Result: the last number actually reached.
+int64 reached_number
+---
+# Feedback: the number we are currently on.
+int64 current_number

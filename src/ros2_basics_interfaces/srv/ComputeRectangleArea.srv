@@ -1,0 +1,7 @@
+# Request: the two sides of a rectangle.
+float64 length
+float64 width
+---
+# Response: the area plus a message describing what happened.
+float64 area
+string message

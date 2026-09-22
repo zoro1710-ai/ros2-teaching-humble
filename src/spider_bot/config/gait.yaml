@@ -1,0 +1,16 @@
+# Lesson 21 - gait tuning. Every number here is worth experimenting with.
+#
+# Change them live:
+#     ros2 param set /gait_controller cycle_time 0.4     # faster steps
+#     ros2 param set /gait_controller step_height 0.08   # higher lift
+
+gait_controller:
+  ros__parameters:
+    cycle_time: 0.8          # seconds for one full gait cycle
+    duty_factor: 0.5         # fraction of the cycle a foot is on the ground
+    step_height: 0.04        # metres the foot lifts during swing
+    body_height: 0.12        # metres from the ground to the body
+    stance_radius: 0.16      # how far out the feet rest, from the coxa joint
+    max_linear_speed: 0.15   # m/s, clamps /cmd_vel
+    max_angular_speed: 0.8   # rad/s, clamps /cmd_vel
+    update_rate: 50.0        # Hz of the gait loop

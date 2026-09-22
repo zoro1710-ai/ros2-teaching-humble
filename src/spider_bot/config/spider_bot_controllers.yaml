@@ -1,0 +1,35 @@
+# Lesson 19 - ros2_control configuration.
+#
+# Two controllers are loaded:
+#   joint_state_broadcaster  reads the joints and publishes /joint_states
+#   leg_position_controller  accepts position commands for all 12 joints
+#
+# Check what is loaded at runtime:
+#     ros2 control list_controllers
+#     ros2 control list_hardware_interfaces
+
+controller_manager:
+  ros__parameters:
+    update_rate: 200            # Hz - the control loop rate, not the gait rate
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    leg_position_controller:
+      type: position_controllers/JointGroupPositionController
+
+leg_position_controller:
+  ros__parameters:
+    joints:
+      - front_left_coxa_joint
+      - front_left_femur_joint
+      - front_left_tibia_joint
+      - front_right_coxa_joint
+      - front_right_femur_joint
+      - front_right_tibia_joint
+      - rear_left_coxa_joint
+      - rear_left_femur_joint
+      - rear_left_tibia_joint
+      - rear_right_coxa_joint
+      - rear_right_femur_joint
+      - rear_right_tibia_joint

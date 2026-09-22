@@ -1,0 +1,4 @@
+# Tell the spawner that a turtle has been caught and should be removed.
+string name
+---
+bool success

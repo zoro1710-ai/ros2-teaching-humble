@@ -1,0 +1,8 @@
+# This repository is run on Linux. Keep LF endings in the repository for
+# everything, so shell scripts and Python entry points work after checkout
+# even when they were authored on Windows.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
