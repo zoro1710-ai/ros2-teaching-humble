@@ -153,6 +153,7 @@ ros2 topic list
 ros2 topic echo /chatter
 ros2 topic info /chatter --verbose
 ros2 topic hz /chatter
+rqt_graph
 ```
 
 Notice that the talker is C++ and the listener is Python. Neither knows or
