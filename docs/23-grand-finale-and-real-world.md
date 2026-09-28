@@ -110,7 +110,7 @@ When it finishes it prints, e.g., `MISSION OVER: 5 caught in 11.3 s`.
 
 ---
 
-## 4 — Presenter script (what to say while it runs)
+## 4 — Presenter script 
 
 Do these in order; each one demonstrates a different concept *live*.
 
@@ -118,9 +118,6 @@ Do these in order; each one demonstrates a different concept *live*.
    ```bash
    rqt_graph
    ```
-   Point at it: "two **nodes**, connected by **topics**; the arrows into
-   turtlesim are the `/spawn` and `/kill` **services**." One picture, three
-   concepts.
 
 2. **Prove it is an action, not a service.** Send the goal, and narrate the
    feedback lines as they scroll: "a service would give me *one* answer at the
