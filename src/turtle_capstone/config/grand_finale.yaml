@@ -1,0 +1,15 @@
+# Grand finale - every tunable number for the mission_control action server.
+#
+# Retune it LIVE, mid-hunt, to show parameters doing real work:
+#     ros2 param set /mission_control linear_gain 4.0     # faster, sloppier
+#     ros2 param set /mission_control angular_gain 12.0   # watch it overshoot
+#     ros2 param set /mission_control catch_distance 1.0  # catches from further
+
+mission_control:
+  ros__parameters:
+    linear_gain: 2.0          # forward speed = gain * distance
+    angular_gain: 6.0         # turn rate = gain * heading error
+    catch_distance: 0.5       # metres; closer than this counts as caught
+    update_rate: 50.0         # Hz of the hunt control loop
+    spawn_x_range: [1.0, 10.0]
+    spawn_y_range: [1.0, 10.0]

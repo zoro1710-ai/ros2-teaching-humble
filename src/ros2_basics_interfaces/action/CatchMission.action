@@ -1,0 +1,12 @@
+# Goal: spawn this many turtles and hunt every one of them down.
+int32 turtle_count
+---
+# Result: how the whole mission went.
+int32 total_caught
+float64 elapsed_seconds
+---
+# Feedback: live progress, streamed on every control tick while the hunt runs.
+int32 caught_so_far
+int32 remaining
+string current_target
+float64 distance_to_target

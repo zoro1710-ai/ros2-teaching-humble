@@ -1,6 +1,6 @@
 # The course
 
-Twenty-three lessons, in order. Each one is short, ends with something you
+Twenty-four lessons, in order. Each one is short, ends with something you
 run, and builds on the one before it. Everything is written for
 **Ubuntu 22.04 + ROS 2 Humble Hawksbill**.
 
@@ -50,6 +50,7 @@ Parts 1–5 are ROS 2 itself. Part 6 builds a four-legged robot with it.
 | # | Lesson | You will be able to |
 |---|--------|---------------------|
 | 16 | [Capstone: catch them all](16-capstone-catch-them-all.md) | Build a complete multi-node application with a control loop |
+| 23 | [Grand finale + real world](23-grand-finale-and-real-world.md) | Run nodes, topics, services, params and actions at once, and map them to real robots |
 
 ## Part 6 — A four legged robot
 
@@ -71,6 +72,7 @@ Part 6 runs in RViz alone up to lesson 21 — Gazebo is only needed for lessons
 ## Reference
 
 - [Cheat sheet](cheatsheet.md) — every CLI command used in the course, on one page
+- [Demo cheat sheet](demo-cheatsheet.md) — copy-paste commands for the live grand-finale + spider demo
 - [Troubleshooting](troubleshooting.md) — the errors you will actually hit, and their fixes
 - [Glossary](glossary.md) — the vocabulary, defined once
 
