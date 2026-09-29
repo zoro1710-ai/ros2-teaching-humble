@@ -26,6 +26,8 @@ setup(
         'console_scripts': [
             'turtle_spawner = turtle_capstone.turtle_spawner:main',
             'turtle_controller = turtle_capstone.turtle_controller:main',
+            'mission_control = turtle_capstone.mission_control:main',
+            'mission_client = turtle_capstone.mission_client:main',
         ],
     },
 )

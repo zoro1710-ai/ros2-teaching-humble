@@ -23,7 +23,7 @@ thing that commonly breaks and prints the exact fix.
 
 ## Start here
 
-**[docs/README.md](docs/README.md)** — the twenty-three lessons, in order.
+**[docs/README.md](docs/README.md)** — the twenty-four lessons, in order.
 
 If you only have an hour, do lessons 00 → 04. That is enough to write a node
 that talks to another node, which is most of day-to-day ROS 2.

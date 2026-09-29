@@ -18,6 +18,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SetLed.srv"
   "srv/CatchTurtle.srv"
   "action/CountUntil.action"
+  "action/CatchMission.action"
   DEPENDENCIES std_msgs
 )
 

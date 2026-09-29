@@ -43,7 +43,9 @@
   <xacro:property name="mount_x" value="0.12"/>
   <xacro:property name="mount_y" value="0.08"/>
 
-  <xacro:property name="pi" value="3.14159265359"/>
+  <!-- xacro already provides pi as a built-in constant in ${} expressions,
+       so there is no property to declare here. Defining our own would trigger
+       "redefining global symbol: pi", which the launch file treats as fatal. -->
 
   <!-- ============================================================= -->
   <!-- Materials (colours in RViz).                                   -->
