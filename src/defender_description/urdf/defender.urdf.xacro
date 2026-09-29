@@ -1,0 +1,292 @@
+<?xml version="1.0"?>
+<!--
+  The Defender: a six wheel rocker-bogie rover with a self-levelling turret.
+
+  Check it without launching anything:
+      xacro src/defender_description/urdf/defender.urdf.xacro > /tmp/defender.urdf
+      check_urdf /tmp/defender.urdf
+      urdf_to_graphiz /tmp/defender.urdf      # writes a PDF of the tree
+
+  See it and move every joint:
+      ros2 launch defender_description display.launch.py
+
+  Two files, two jobs:
+      defender_generated.xacro  MEASURED from the Blender model by
+                                tools/blender_export.py: meshes, joint
+                                positions, sizes. Never edit it by hand.
+      this file                 DECIDED by us: which links exist, how they
+                                connect, which way joints turn, their
+                                limits, and the masses.
+
+  The tree (every joint is a hinge unless marked):
+
+  base_footprint
+  └ base_link ─────────────────────── the chassis
+    ├ left_rocker / right_rocker ──── rocker-bogie suspension. The right one
+    │ │                               mirrors the left through the differential.
+    │ ├ left_bogie
+    │ │ ├ front_left_steer  → front_left_wheel     (continuous)
+    │ │ └ middle_left_steer → middle_left_wheel    (continuous)
+    │ └ rear_left_steer     → rear_left_wheel      (continuous)
+    ├ differential ───────────────── the bar on the back that links the rockers
+    ├ platform_servo_front_left / _front_right / _rear ── levelling servos
+    ├ platform_roll → platform ────── the levelling plate: roll, then pitch
+    │ └ turret ────────────────────── yaw, driven by the stepper
+    │   ├ flywheel_left / flywheel_right (continuous, spin opposite ways)
+    │   └ muzzle ────────────────────── (fixed) where the dart leaves
+    └ zed2_camera → zed2_camera_optical  (fixed)
+
+  Conventions (REP 103): x forward, y left, z up. Wheels: + drives forward.
+  Steering: + turns left. Levelling servos: + lifts the arm.
+-->
+<robot name="defender" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="defender_generated.xacro"/>
+
+
+  <!-- Masses in kg. Guesses until you weigh the real parts - then fix them here. -->
+  <xacro:property name="base_mass" value="1.20"/>
+  <xacro:property name="rocker_mass" value="0.12"/>
+  <xacro:property name="bogie_mass" value="0.08"/>
+  <xacro:property name="steer_mass" value="0.06"/>
+  <xacro:property name="wheel_mass" value="0.05"/>
+  <xacro:property name="servo_arm_mass" value="0.01"/>
+  <xacro:property name="platform_mass" value="0.08"/>
+  <xacro:property name="turret_mass" value="0.30"/>
+  <xacro:property name="flywheel_mass" value="0.015"/>
+  <xacro:property name="camera_mass" value="0.166"/>  <!-- ZED 2 datasheet -->
+
+  <xacro:property name="wheel_radius" value="0.0517"/>
+  <xacro:property name="wheel_width" value="0.045"/>
+
+  <!-- A link whose look and inertia come from the generated file. -->
+  <xacro:macro name="cad_link" params="name mass">
+    <link name="${name}">
+      <xacro:call macro="visuals_${name}"/>
+      <xacro:call macro="inertia_${name}" mass="${mass}"/>
+    </link>
+  </xacro:macro>
+
+  <!-- ============================================================= -->
+  <!-- Chassis                                                        -->
+  <!-- ============================================================= -->
+  <link name="base_footprint"/>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${-base_footprint_z}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="base_link">
+    <xacro:visuals_base_link/>
+    <xacro:inertia_base_link mass="${base_mass}"/>
+    <collision>
+      <origin xyz="0 0 -0.013"/>
+      <geometry><box size="0.27 0.19 0.10"/></geometry>
+    </collision>
+  </link>
+
+  <!-- ============================================================= -->
+  <!-- Rocker-bogie suspension, one side at a time                    -->
+  <!-- ============================================================= -->
+  <xacro:macro name="wheel_pod" params="pod side carrier steer_xyz wheel_xyz">
+    <xacro:cad_link name="${pod}_${side}_steer" mass="${steer_mass}"/>
+    <joint name="${pod}_${side}_steer_joint" type="revolute">
+      <parent link="${carrier}"/>
+      <child link="${pod}_${side}_steer"/>
+      <origin xyz="${steer_xyz}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-pi/2}" upper="${pi/2}" effort="1.0" velocity="3.0"/>
+    </joint>
+
+    <link name="${pod}_${side}_wheel">
+      <xacro:call macro="visuals_${pod}_${side}_wheel"/>
+      <xacro:call macro="inertia_${pod}_${side}_wheel" mass="${wheel_mass}"/>
+      <collision>
+        <origin rpy="${pi/2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+    </link>
+    <joint name="${pod}_${side}_wheel_joint" type="continuous">
+      <parent link="${pod}_${side}_steer"/>
+      <child link="${pod}_${side}_wheel"/>
+      <origin xyz="${wheel_xyz}"/>
+      <axis xyz="0 1 0"/>
+      <limit effort="1.0" velocity="20.0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- The *_xyz parameters are the measured positions from defender_generated.xacro. -->
+  <xacro:macro name="suspension_side"
+               params="side rocker_xyz bogie_xyz front_steer_xyz front_wheel_xyz
+                       middle_steer_xyz middle_wheel_xyz rear_steer_xyz rear_wheel_xyz">
+    <xacro:cad_link name="${side}_rocker" mass="${rocker_mass}"/>
+    <joint name="${side}_rocker_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="${side}_rocker"/>
+      <origin xyz="${rocker_xyz}"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-0.5" upper="0.5" effort="10.0" velocity="2.0"/>
+      <!-- The differential forces the right rocker to do the opposite of the left. -->
+      <xacro:if value="${side == 'right'}">
+        <mimic joint="left_rocker_joint" multiplier="-1"/>
+      </xacro:if>
+    </joint>
+
+    <xacro:cad_link name="${side}_bogie" mass="${bogie_mass}"/>
+    <joint name="${side}_bogie_joint" type="revolute">
+      <parent link="${side}_rocker"/>
+      <child link="${side}_bogie"/>
+      <origin xyz="${bogie_xyz}"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-0.6" upper="0.6" effort="10.0" velocity="2.0"/>
+    </joint>
+
+    <!-- Front and middle wheels hang from the bogie, the rear one from the rocker. -->
+    <xacro:wheel_pod pod="front" side="${side}" carrier="${side}_bogie"
+                     steer_xyz="${front_steer_xyz}" wheel_xyz="${front_wheel_xyz}"/>
+    <xacro:wheel_pod pod="middle" side="${side}" carrier="${side}_bogie"
+                     steer_xyz="${middle_steer_xyz}" wheel_xyz="${middle_wheel_xyz}"/>
+    <xacro:wheel_pod pod="rear" side="${side}" carrier="${side}_rocker"
+                     steer_xyz="${rear_steer_xyz}" wheel_xyz="${rear_wheel_xyz}"/>
+  </xacro:macro>
+
+  <xacro:suspension_side side="left"
+      rocker_xyz="${left_rocker_origin}" bogie_xyz="${left_bogie_origin}"
+      front_steer_xyz="${front_left_steer_origin}" front_wheel_xyz="${front_left_wheel_origin}"
+      middle_steer_xyz="${middle_left_steer_origin}" middle_wheel_xyz="${middle_left_wheel_origin}"
+      rear_steer_xyz="${rear_left_steer_origin}" rear_wheel_xyz="${rear_left_wheel_origin}"/>
+  <xacro:suspension_side side="right"
+      rocker_xyz="${right_rocker_origin}" bogie_xyz="${right_bogie_origin}"
+      front_steer_xyz="${front_right_steer_origin}" front_wheel_xyz="${front_right_wheel_origin}"
+      middle_steer_xyz="${middle_right_steer_origin}" middle_wheel_xyz="${middle_right_wheel_origin}"
+      rear_steer_xyz="${rear_right_steer_origin}" rear_wheel_xyz="${rear_right_wheel_origin}"/>
+
+  <xacro:cad_link name="differential" mass="0.02"/>
+  <joint name="differential_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="differential"/>
+    <origin xyz="${differential_origin}"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.2" upper="0.2" effort="10.0" velocity="2.0"/>
+    <mimic joint="left_rocker_joint" multiplier="${differential_ratio}"/>
+  </joint>
+
+  <!-- ============================================================= -->
+  <!-- Self-levelling platform                                        -->
+  <!--                                                                -->
+  <!-- The real platform is a closed loop: 3 servos push 3 rods that  -->
+  <!-- hold the plate. URDF can only describe trees, so the plate     -->
+  <!-- gets two "virtual" joints (roll, pitch) and the servo arms are -->
+  <!-- separate joints. Working out servo angles from roll and pitch  -->
+  <!-- is inverse kinematics - that is a later lesson.                -->
+  <!-- ============================================================= -->
+  <xacro:macro name="platform_servo" params="where xyz axis">
+    <xacro:cad_link name="platform_servo_${where}" mass="${servo_arm_mass}"/>
+    <joint name="platform_servo_${where}_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="platform_servo_${where}"/>
+      <origin xyz="${xyz}"/>
+      <axis xyz="${axis}"/>
+      <limit lower="${-pi/2}" upper="${pi/2}" effort="0.2" velocity="6.0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:platform_servo where="front_left"
+      xyz="${platform_servo_front_left_origin}" axis="${platform_servo_front_left_axis}"/>
+  <xacro:platform_servo where="front_right"
+      xyz="${platform_servo_front_right_origin}" axis="${platform_servo_front_right_axis}"/>
+  <xacro:platform_servo where="rear"
+      xyz="${platform_servo_rear_origin}" axis="${platform_servo_rear_axis}"/>
+
+  <link name="platform_roll">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
+    </inertial>
+  </link>
+  <joint name="platform_roll_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="platform_roll"/>
+    <origin xyz="${platform_roll_origin}"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.26" upper="0.26" effort="2.0" velocity="3.0"/>
+  </joint>
+
+  <xacro:cad_link name="platform" mass="${platform_mass}"/>
+  <joint name="platform_pitch_joint" type="revolute">
+    <parent link="platform_roll"/>
+    <child link="platform"/>
+    <origin xyz="${platform_origin}"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.26" upper="0.26" effort="2.0" velocity="3.0"/>
+  </joint>
+
+  <!-- ============================================================= -->
+  <!-- Turret and shooter                                             -->
+  <!-- ============================================================= -->
+  <link name="turret">
+    <xacro:visuals_turret/>
+    <xacro:inertia_turret mass="${turret_mass}"/>
+    <collision>
+      <origin xyz="0.0 0.0 0.075"/>
+      <geometry><box size="0.13 0.085 0.15"/></geometry>
+    </collision>
+  </link>
+  <joint name="turret_yaw_joint" type="revolute">
+    <parent link="platform"/>
+    <child link="turret"/>
+    <origin xyz="${turret_origin}"/>
+    <axis xyz="0 0 1"/>
+    <!-- A 28BYJ-48 stepper. Not continuous: the wires would wind up. -->
+    <limit lower="${-pi}" upper="${pi}" effort="0.03" velocity="1.5"/>
+  </joint>
+
+  <xacro:cad_link name="flywheel_left" mass="${flywheel_mass}"/>
+  <joint name="flywheel_left_joint" type="continuous">
+    <parent link="turret"/>
+    <child link="flywheel_left"/>
+    <origin xyz="${flywheel_left_origin}"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0.05" velocity="1500.0"/>
+  </joint>
+
+  <xacro:cad_link name="flywheel_right" mass="${flywheel_mass}"/>
+  <joint name="flywheel_right_joint" type="continuous">
+    <parent link="turret"/>
+    <child link="flywheel_right"/>
+    <origin xyz="${flywheel_right_origin}"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0.05" velocity="1500.0"/>
+    <!-- The two wheels pinch the dart, so they spin in opposite directions. -->
+    <mimic joint="flywheel_left_joint" multiplier="-1"/>
+  </joint>
+
+  <!-- Where the dart leaves the barrel, pointing the way it flies (+x). -->
+  <link name="muzzle"/>
+  <joint name="muzzle_joint" type="fixed">
+    <parent link="turret"/>
+    <child link="muzzle"/>
+    <origin xyz="${muzzle_origin}"/>
+  </joint>
+
+  <!-- ============================================================= -->
+  <!-- ZED 2 stereo camera                                            -->
+  <!-- ============================================================= -->
+  <xacro:cad_link name="zed2_camera" mass="${camera_mass}"/>
+  <joint name="zed2_camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="zed2_camera"/>
+    <origin xyz="${zed2_camera_origin}"/>
+  </joint>
+
+  <!-- Image frames use a different convention: z forward, x right, y down. -->
+  <link name="zed2_camera_optical"/>
+  <joint name="zed2_camera_optical_joint" type="fixed">
+    <parent link="zed2_camera"/>
+    <child link="zed2_camera_optical"/>
+    <origin rpy="${-pi/2} 0 ${-pi/2}"/>
+  </joint>
+
+</robot>

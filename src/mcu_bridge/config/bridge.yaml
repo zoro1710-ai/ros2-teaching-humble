@@ -1,0 +1,15 @@
+mcu_bridge:
+  ros__parameters:
+    # 'sim' = a pretend board, no hardware needed.
+    # Real boards: ESP32 is usually /dev/ttyUSB0, Arduino Uno /dev/ttyACM0.
+    # Find yours with:  ls /dev/ttyUSB* /dev/ttyACM*
+    port: sim
+    baud: 115200               # must match BAUD in firmware/mcu_bridge/config.h
+
+    # Measure your robot: centre of left wheel to centre of right wheel.
+    wheel_separation: 0.15     # m
+    # Speed of a wheel at full power. Drive 1 m, time it, divide.
+    max_wheel_speed: 0.5       # m/s
+
+    cmd_vel_timeout: 0.5       # s of /cmd_vel silence before the motors stop
+    motor_rate: 20.0           # Hz; the board's watchdog expects at least 2 Hz

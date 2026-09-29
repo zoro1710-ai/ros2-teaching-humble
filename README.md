@@ -38,7 +38,10 @@ src/
 ├── ros2_basics_interfaces/   custom .msg / .srv / .action definitions
 ├── ros2_basics_py/           one runnable example per lesson (rclpy)
 ├── turtle_capstone/          the capstone: catch every turtle that spawns
+├── mcu_bridge/               real sensors + motors: serial bridge, keyboard teleop
+├── defender_description/     URDF of our rover, generated from its Blender model
 └── spider_bot/               Part 6: URDF, leg IK, trot gait, cmd_vel bridge
+firmware/                     Arduino/ESP32 sketch that pairs with mcu_bridge
 docs/                         the lessons
 exercises/                    eight practice problems, with full solutions
 scripts/                      verify_setup.py, build.sh, test.sh, clean.sh
