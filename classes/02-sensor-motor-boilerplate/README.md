@@ -69,7 +69,7 @@ ros2 run mcu_bridge keyboard_teleop --ros-args -r cmd_vel:=/turtle1/cmd_vel
 | HC-SR04 ultrasonic, LDR + 10 kΩ | the two example sensors |
 
 ### Wiring
-All pins live in [`config.h`](../../firmware/mcu_bridge/config.h). It picks ESP32 or Uno pins automatically.
+All pins live in [`config.h`](../../firmware/mcu_bridge/config.h). It picks ESP32, Uno or STM32 Black Pill pins automatically (Black Pill wiring: see [class 04](../04-stm32-n20-motors/README.md)).
 
 | Driver pin | ESP32 | Uno |
 |---|---|---|

@@ -1,7 +1,8 @@
 // mcu_bridge.ino - the board half of the sensor + motor boilerplate.
 //
-// Pairs with the ROS 2 node in src/mcu_bridge. Works on ESP32 and Arduino
-// Uno/Nano with the plain Arduino IDE; no micro-ROS or extra libraries.
+// Pairs with the ROS 2 node in src/mcu_bridge. Works on ESP32, Arduino
+// Uno/Nano and the STM32 Black Pill with the plain Arduino IDE; no micro-ROS
+// or extra libraries.
 //
 //   board -> PC   S <type> <name> <values...>   every sensor, on its own timer
 //   PC -> board   M <left> <right>              wheel commands, -1.0 .. 1.0
@@ -85,6 +86,13 @@ void readCommands() {
 
 void setup() {
   Serial.begin(BAUD);
+#ifdef MOTOR_STBY_PIN
+  pinMode(MOTOR_STBY_PIN, OUTPUT);
+  digitalWrite(MOTOR_STBY_PIN, HIGH);  // wake the TB6612 up
+#endif
+#ifdef PWM_FREQUENCY
+  analogWriteFrequency(PWM_FREQUENCY);
+#endif
   leftMotor.begin();
   rightMotor.begin();
   for (uint8_t i = 0; i < SENSOR_COUNT; i++) SENSORS[i]->begin();

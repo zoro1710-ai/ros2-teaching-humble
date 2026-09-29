@@ -3,6 +3,7 @@
 
 // ---- Serial link to the PC ------------------------------------------------
 #define BAUD 115200  // must match 'baud' in src/mcu_bridge/config/bridge.yaml
+                     // (the Black Pill's USB serial ignores it, any value works)
 
 // Stop the motors if no "M" command arrives for this long. The bridge sends
 // 20 per second, so this only fires when the PC, cable or bridge has died.
@@ -31,6 +32,25 @@
 #define SONAR_TRIG_PIN 18
 #define SONAR_ECHO_PIN 19  // HC-SR04 echo is 5 V: use a 1k/2k divider!
 // MPU6050: SDA = 21, SCL = 22 (the ESP32 default I2C pins)
+
+#elif defined(ARDUINO_ARCH_STM32)
+// ---- STM32 Black Pill (F411 / F401) ---------------------------------------
+// Same wiring as classes/04-stm32-n20-motors. Driver: TB6612FNG.
+// "Left" is motor A, "right" is motor B.
+#define LEFT_PWM PA8
+#define LEFT_IN1 PB12
+#define LEFT_IN2 PB13
+#define RIGHT_PWM PB6
+#define RIGHT_IN1 PB15
+#define RIGHT_IN2 PA10
+#define MOTOR_STBY_PIN PB14  // TB6612 standby: the sketch holds it HIGH
+#define PWM_FREQUENCY 20000  // above hearing, so the N20s don't whine
+
+// Sensors (leave them unwired if you like; the topics just show junk)
+#define LDR_PIN PA0        // LDR + 10k divider between 3.3V and GND
+#define SONAR_TRIG_PIN PA1
+#define SONAR_ECHO_PIN PA2  // HC-SR04 echo is 5 V: use a 1k/2k divider to be safe
+// MPU6050: SDA = PB7, SCL = PB6. PB6 is motor B's PWM here, so move one of them.
 
 #else
 // ---- Arduino Uno / Nano ---------------------------------------------------
